@@ -229,6 +229,7 @@ Every tool response includes a `_meta` envelope with timing, token savings, and 
 
 ## Recent Updates
 
+**v0.2.10** — Pin `mcp<1.10.0` to prevent Windows `win32api` DLL crash on startup
 **v0.2.9** — Community savings meter: anonymous token savings shared to a live global counter at j.gravelle.us (opt-out via `JCODEMUNCH_SHARE_SAVINGS=0`); updated model pricing (Opus $25/1M, GPT-5 $10/1M)
 **v0.2.8** — Estimated cost avoided added to every `_meta` response (`cost_avoided`, `total_cost_avoided`)
 **v0.2.7** — Security fix: `.claude/` excluded from sdist; structural CI guardrails prevent credential bundling
