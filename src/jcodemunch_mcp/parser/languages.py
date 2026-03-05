@@ -505,6 +505,7 @@ CPP_SPEC = LanguageSpec(
         "enum_specifier": "type",
         "type_definition": "type",
         "alias_declaration": "type",
+        "namespace_definition": "type",
         "function_definition": "function",
         "declaration": "function",
         "field_declaration": "function",
@@ -516,6 +517,7 @@ CPP_SPEC = LanguageSpec(
         "enum_specifier": "name",
         "type_definition": "declarator",
         "alias_declaration": "name",
+        "namespace_definition": "name",
         "function_definition": "declarator",
         "declaration": "declarator",
         "field_declaration": "declarator",
@@ -532,9 +534,9 @@ CPP_SPEC = LanguageSpec(
     },
     docstring_strategy="preceding_comment",
     decorator_node_type=None,
-    container_node_types=["class_specifier", "struct_specifier", "union_specifier"],
+    container_node_types=["class_specifier", "struct_specifier", "union_specifier", "namespace_definition"],
     constant_patterns=["preproc_def"],
-    type_patterns=["class_specifier", "struct_specifier", "union_specifier", "enum_specifier", "type_definition", "alias_declaration"],
+    type_patterns=["class_specifier", "struct_specifier", "union_specifier", "enum_specifier", "type_definition", "alias_declaration", "namespace_definition"],
 )
 
 

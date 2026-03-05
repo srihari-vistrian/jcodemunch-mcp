@@ -353,6 +353,8 @@ Every tool response includes a `_meta` envelope with timing, token savings, and 
 | Go         | `.go`         | function, method, type, constant        |
 | Rust       | `.rs`         | function, type, impl, constant          |
 | Java       | `.java`       | method, class, type, constant           |
+| C          | `.c`, `.h`    | function, type (struct/enum/typedef), constant |
+| C++        | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx` | function, class, method, type (struct/enum/namespace), constant |
 | PHP        | `.php`        | function, class, method, type, constant |
 | Dart       | `.dart`       | function, class, method, type           |
 | C#         | `.cs`         | class, method, type, record             |
