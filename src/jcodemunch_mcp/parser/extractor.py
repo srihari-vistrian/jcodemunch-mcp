@@ -48,6 +48,17 @@ def parse_file(content: str, filename: str, language: str) -> list[Symbol]:
         spec = LANGUAGE_REGISTRY[language]
         symbols = _parse_with_spec(source_bytes, filename, language, spec)
 
+    # .h files default to C — also try C++ and keep whichever yields more symbols,
+    # since the C parser may partially (incorrectly) parse C++ constructs.
+    if language == "c" and "cpp" in LANGUAGE_REGISTRY:
+        cpp_spec = LANGUAGE_REGISTRY["cpp"]
+        cpp_parser = get_parser(cpp_spec.ts_language)
+        cpp_tree = cpp_parser.parse(source_bytes)
+        cpp_symbols: list = []
+        _walk_tree(cpp_tree.root_node, cpp_spec, source_bytes, filename, "cpp", cpp_symbols, None)
+        if len(cpp_symbols) > len(symbols):
+            symbols = cpp_symbols
+
     # Disambiguate overloaded symbols (same ID)
     symbols = _disambiguate_overloads(symbols)
 

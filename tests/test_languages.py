@@ -1930,3 +1930,40 @@ def test_vue_extension_mapping():
     """.vue extension maps to vue language."""
     from jcodemunch_mcp.parser.languages import get_language_for_path
     assert get_language_for_path("src/components/Counter.vue") == "vue"
+
+
+def test_h_file_fallback_to_cpp():
+    """Test that .h files with C++ content fall back to C++ parser."""
+    cpp_in_h = '''
+    class Widget {
+    public:
+        void draw() {}
+    };
+
+    namespace ui {
+        void init() {}
+    }
+    '''
+    # Parse as "c" (what .h maps to) — should auto-fallback to C++
+    symbols = parse_file(cpp_in_h, "widget.h", "c")
+    assert len(symbols) > 0
+
+    cls = next((s for s in symbols if s.name == "Widget"), None)
+    assert cls is not None
+    assert cls.kind == "class"
+    # Symbols should report as C++ after fallback
+    assert cls.language == "cpp"
+
+
+def test_h_file_pure_c_no_fallback():
+    """Test that .h files with pure C content stay as C."""
+    c_in_h = '''
+    struct Point { int x; int y; };
+    int add(int a, int b) { return a + b; }
+    '''
+    symbols = parse_file(c_in_h, "point.h", "c")
+    assert len(symbols) > 0
+
+    struct = next((s for s in symbols if s.name == "Point"), None)
+    assert struct is not None
+    assert struct.language == "c"
