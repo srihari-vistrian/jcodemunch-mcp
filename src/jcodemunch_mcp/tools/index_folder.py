@@ -320,7 +320,10 @@ def index_folder(
                 symbols = parse_file(content, rel_path, language)
                 if symbols:
                     all_symbols.extend(symbols)
-                    languages[language] = languages.get(language, 0) + 1
+                    # Use the actual language from parsed symbols (may differ
+                    # from extension lookup, e.g. .h files falling back to C++)
+                    actual_lang = symbols[0].language
+                    languages[actual_lang] = languages.get(actual_lang, 0) + 1
                     raw_files[rel_path] = content
                     parsed_files.append(rel_path)
             except Exception as e:

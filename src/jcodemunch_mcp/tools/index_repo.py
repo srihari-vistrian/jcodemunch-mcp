@@ -345,7 +345,8 @@ async def index_repo(
                 symbols = parse_file(content, path, language)
                 if symbols:
                     all_symbols.extend(symbols)
-                    languages[language] = languages.get(language, 0) + 1
+                    actual_lang = symbols[0].language
+                    languages[actual_lang] = languages.get(actual_lang, 0) + 1
                     raw_files[path] = content
                     parsed_files.append(path)
             except Exception:
