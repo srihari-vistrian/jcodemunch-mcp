@@ -259,3 +259,179 @@ def test_parse_php():
     assert enum is not None
     assert enum.kind == "type"
 
+
+C_SOURCE = '''
+// A person struct
+struct Person {
+    char* name;
+    int age;
+};
+
+union Data {
+    int i;
+    float f;
+};
+
+enum Color { RED, GREEN, BLUE };
+
+typedef unsigned long size_t;
+
+typedef void (*callback_t)(int, int);
+
+// Add two numbers
+int add(int a, int b) {
+    return a + b;
+}
+
+// Get name
+char* get_name(void) {
+    return "hello";
+}
+'''
+
+
+def test_parse_c():
+    """Test C parsing."""
+    symbols = parse_file(C_SOURCE, "main.c", "c")
+
+    func = next((s for s in symbols if s.name == "add"), None)
+    assert func is not None
+    assert func.kind == "function"
+    assert "Add two numbers" in func.docstring
+
+    # Pointer-return function name extracted correctly
+    ptr_func = next((s for s in symbols if s.name == "get_name"), None)
+    assert ptr_func is not None
+    assert ptr_func.kind == "function"
+
+    struct = next((s for s in symbols if s.name == "Person"), None)
+    assert struct is not None
+    assert struct.kind == "type"
+
+    union = next((s for s in symbols if s.name == "Data"), None)
+    assert union is not None
+    assert union.kind == "type"
+
+    enum = next((s for s in symbols if s.name == "Color"), None)
+    assert enum is not None
+    assert enum.kind == "type"
+
+    typedef = next((s for s in symbols if s.name == "size_t"), None)
+    assert typedef is not None
+    assert typedef.kind == "type"
+
+    # Function pointer typedef name extracted without parens/asterisk
+    fn_ptr = next((s for s in symbols if s.name == "callback_t"), None)
+    assert fn_ptr is not None
+    assert fn_ptr.kind == "type"
+
+
+CPP_SOURCE = '''
+// A vector utility class
+class Vector {
+public:
+    // Constructor
+    Vector(double x, double y) : x_(x), y_(y) {}
+
+    // Get magnitude
+    double magnitude() const {
+        return 0.0;
+    }
+
+private:
+    double x_;
+    double y_;
+};
+
+struct Point {
+    double x;
+    double y;
+};
+
+union Data {
+    int i;
+    float f;
+};
+
+enum class Direction { North, South, East, West };
+
+namespace math {
+    // Compute factorial
+    int factorial(int n) {
+        if (n <= 1) return 1;
+        return n * factorial(n - 1);
+    }
+}
+
+template<typename T>
+T max_val(T a, T b) {
+    return a > b ? a : b;
+}
+
+template<typename T>
+class Container {
+public:
+    void add(T item) {}
+};
+
+using IntAlias = int;
+
+// Add two numbers
+int add(int a, int b) {
+    return a + b;
+}
+'''
+
+
+def test_parse_cpp():
+    """Test C++ parsing."""
+    symbols = parse_file(CPP_SOURCE, "main.cpp", "cpp")
+
+    cls = next((s for s in symbols if s.name == "Vector"), None)
+    assert cls is not None
+    assert cls.kind == "class"
+
+    method = next((s for s in symbols if s.name == "magnitude"), None)
+    assert method is not None
+    assert method.kind == "method"
+
+    # Constructor
+    ctor = next((s for s in symbols if s.qualified_name == "Vector.Vector"), None)
+    assert ctor is not None
+    assert ctor.kind == "method"
+
+    struct = next((s for s in symbols if s.name == "Point"), None)
+    assert struct is not None
+    assert struct.kind == "type"
+
+    union = next((s for s in symbols if s.name == "Data"), None)
+    assert union is not None
+    assert union.kind == "type"
+
+    enum = next((s for s in symbols if s.name == "Direction"), None)
+    assert enum is not None
+    assert enum.kind == "type"
+
+    ns = next((s for s in symbols if s.name == "math"), None)
+    assert ns is not None
+    assert ns.kind == "type"
+
+    # Template function
+    tmpl_func = next((s for s in symbols if s.name == "max_val"), None)
+    assert tmpl_func is not None
+    assert tmpl_func.kind == "function"
+
+    # Template class
+    tmpl_cls = next((s for s in symbols if s.name == "Container"), None)
+    assert tmpl_cls is not None
+    assert tmpl_cls.kind == "class"
+
+    # Using alias
+    alias = next((s for s in symbols if s.name == "IntAlias"), None)
+    assert alias is not None
+    assert alias.kind == "type"
+
+    func = next((s for s in symbols if s.name == "add" and s.kind == "function"), None)
+    assert func is not None
+    assert "Add two numbers" in func.docstring
+

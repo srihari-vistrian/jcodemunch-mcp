@@ -147,13 +147,31 @@ def _extract_name(node, spec: LanguageSpec, source_bytes: bytes) -> Optional[str
     
     if node.type not in spec.name_fields:
         return None
-    
+
     field_name = spec.name_fields[node.type]
     name_node = node.child_by_field_name(field_name)
-    
+
     if name_node:
+        # C/C++: unwrap declarator nesting to reach the actual identifier.
+        # pointer_declarator wraps function_declarator (e.g. char* get_name())
+        # function_declarator wraps identifier (e.g. add(int a, int b))
+        # parenthesized_declarator wraps pointer_declarator (e.g. (*callback_t))
+        while name_node.type in ("pointer_declarator", "function_declarator",
+                                  "parenthesized_declarator", "reference_declarator"):
+            inner = name_node.child_by_field_name("declarator")
+            if inner:
+                name_node = inner
+            elif name_node.type == "parenthesized_declarator":
+                # No declarator field; find first named child (pointer_declarator etc.)
+                found = next((c for c in name_node.children if c.is_named), None)
+                if found:
+                    name_node = found
+                else:
+                    break
+            else:
+                break
         return source_bytes[name_node.start_byte:name_node.end_byte].decode("utf-8")
-    
+
     return None
 
 

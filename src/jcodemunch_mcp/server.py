@@ -210,7 +210,7 @@ async def list_tools() -> list[Tool]:
                     "language": {
                         "type": "string",
                         "description": "Optional filter by language",
-                        "enum": ["python", "javascript", "typescript", "go", "rust", "java"]
+                        "enum": ["python", "javascript", "typescript", "go", "rust", "java", "php", "c", "cpp"]
                     },
                     "max_results": {
                         "type": "integer",

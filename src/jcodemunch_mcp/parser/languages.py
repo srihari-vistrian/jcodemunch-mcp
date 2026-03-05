@@ -54,6 +54,14 @@ LANGUAGE_EXTENSIONS = {
     ".rs": "rust",
     ".java": "java",
     ".php": "php",
+    ".c": "c",
+    ".h": "c",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hh": "cpp",
+    ".hxx": "cpp",
 }
 
 
@@ -277,6 +285,75 @@ PHP_SPEC = LanguageSpec(
 )
 
 
+# C specification
+C_SPEC = LanguageSpec(
+    ts_language="c",
+    symbol_node_types={
+        "function_definition": "function",
+        "struct_specifier": "type",
+        "union_specifier": "type",
+        "enum_specifier": "type",
+        "type_definition": "type",
+    },
+    name_fields={
+        "function_definition": "declarator",
+        "struct_specifier": "name",
+        "union_specifier": "name",
+        "enum_specifier": "name",
+        "type_definition": "declarator",
+    },
+    param_fields={
+        "function_definition": "declarator",
+    },
+    return_type_fields={
+        "function_definition": "type",
+    },
+    docstring_strategy="preceding_comment",
+    decorator_node_type=None,
+    container_node_types=[],
+    constant_patterns=["declaration"],
+    type_patterns=["struct_specifier", "union_specifier", "enum_specifier", "type_definition"],
+)
+
+
+# C++ specification
+CPP_SPEC = LanguageSpec(
+    ts_language="cpp",
+    symbol_node_types={
+        "function_definition": "function",
+        "class_specifier": "class",
+        "struct_specifier": "type",
+        "union_specifier": "type",
+        "enum_specifier": "type",
+        "type_definition": "type",
+        "alias_declaration": "type",
+        "namespace_definition": "type",
+    },
+    name_fields={
+        "function_definition": "declarator",
+        "class_specifier": "name",
+        "struct_specifier": "name",
+        "union_specifier": "name",
+        "enum_specifier": "name",
+        "type_definition": "declarator",
+        "alias_declaration": "name",
+        "namespace_definition": "name",
+    },
+    param_fields={
+        "function_definition": "declarator",
+    },
+    return_type_fields={
+        "function_definition": "type",
+    },
+    docstring_strategy="preceding_comment",
+    decorator_node_type=None,
+    container_node_types=["class_specifier", "struct_specifier", "namespace_definition"],
+    constant_patterns=["declaration"],
+    type_patterns=["struct_specifier", "union_specifier", "enum_specifier", "type_definition",
+                    "alias_declaration", "namespace_definition"],
+)
+
+
 # Language registry
 LANGUAGE_REGISTRY = {
     "python": PYTHON_SPEC,
@@ -286,4 +363,6 @@ LANGUAGE_REGISTRY = {
     "rust": RUST_SPEC,
     "java": JAVA_SPEC,
     "php": PHP_SPEC,
+    "c": C_SPEC,
+    "cpp": CPP_SPEC,
 }
