@@ -14,6 +14,7 @@
 | Dart       | `.dart`       | tree-sitter-dart       | function, class (class/mixin/extension), method, type (enum/typedef) | `@annotation` | `///` doc comments | Constructors and top-level constants are not indexed               |
 | C#         | `.cs`         | tree-sitter-csharp     | class (class/record), method (method/constructor), type (interface/enum/struct/delegate) | `[Attribute]` | `/// <summary>` XML doc comments | Properties and `const` fields not indexed                          |
 | C          | `.c`, `.h`    | tree-sitter-c          | function, type (struct/enum/union), constant | —             | `/* */` and `//` comments | `#define` macros extracted as constants; no class/method hierarchy |
+| Perl       | `.pl`, `.pm`, `.t` | tree-sitter-perl  | function, class (package), constant          | —             | Preceding `#` comments and POD blocks | `use constant` extracted as constants; no return type inference |
 
 ---
 
