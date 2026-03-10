@@ -47,24 +47,29 @@ def parse_github_url(url: str) -> tuple[str, str]:
     raise ValueError(f"Could not parse GitHub URL: {url}")
 
 
-async def fetch_repo_tree(owner: str, repo: str, token: Optional[str] = None) -> list[dict]:
+async def fetch_repo_tree(owner: str, repo: str, token: Optional[str] = None) -> tuple[list[dict], str]:
     """Fetch full repository tree via git/trees API.
-    
+
     Uses recursive=1 to get all paths in a single API call.
+
+    Returns:
+        Tuple of (tree_entries, tree_sha). The tree_sha can be stored and
+        compared on subsequent calls to detect whether anything has changed
+        without downloading file contents.
     """
     url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/HEAD"
     params = {"recursive": "1"}
     headers = {"Accept": "application/vnd.github.v3+json"}
-    
+
     if token:
         headers["Authorization"] = f"token {token}"
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=params, headers=headers)
         response.raise_for_status()
         data = response.json()
-    
-    return data.get("tree", [])
+
+    return data.get("tree", []), data.get("sha", "")
 
 
 def should_skip_file(path: str) -> bool:
@@ -285,19 +290,41 @@ async def index_repo(
 
     try:
         t0 = time.monotonic()
-        # Fetch tree
+        # Fetch tree (also returns the tree SHA for lightweight staleness checks)
         try:
-            tree_entries = await fetch_repo_tree(owner, repo, github_token)
+            tree_entries, current_tree_sha = await fetch_repo_tree(owner, repo, github_token)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return {"success": False, "error": f"Repository not found: {owner}/{repo}"}
             elif e.response.status_code == 403:
                 return {"success": False, "error": "GitHub API rate limit exceeded. Set GITHUB_TOKEN."}
             raise
-        
+
+        # Load existing index once — reused for both the fast-path SHA check
+        # and the full incremental change-detection path below.
+        store = IndexStore(base_path=storage_path)
+        existing_index = store.load_index(owner, repo)
+
+        # Fast-path incremental check: if the stored tree SHA matches the current
+        # one, no files have changed — skip all file downloads entirely.
+        if incremental and current_tree_sha and existing_index is not None:
+            if existing_index.git_head == current_tree_sha:
+                logger.info(
+                    "index_repo tree_sha_match — %s/%s: tree SHA unchanged (%s), skipping download",
+                    owner, repo, current_tree_sha[:12],
+                )
+                return {
+                    "success": True,
+                    "message": "No changes detected (tree SHA unchanged)",
+                    "repo": f"{owner}/{repo}",
+                    "git_head": current_tree_sha,
+                    "changed": 0, "new": 0, "deleted": 0,
+                    "duration_seconds": round(time.monotonic() - t0, 2),
+                }
+
         # Fetch .gitignore
         gitignore_content = await fetch_gitignore(owner, repo, github_token)
-        
+
         # Discover source files
         source_files, truncated = discover_source_files(
             tree_entries,
@@ -330,11 +357,6 @@ async def index_repo(
         for path, content in file_contents:
             if content:
                 current_files[path] = content
-
-        store = IndexStore(base_path=storage_path)
-
-        # Incremental path
-        existing_index = store.load_index(owner, repo)
 
         if existing_index is None and store.has_index(owner, repo):
             logger.warning(
@@ -403,6 +425,7 @@ async def index_repo(
                 raw_files=raw_files_subset,
                 file_summaries=incr_file_summaries,
                 file_languages=incr_file_languages,
+                git_head=current_tree_sha,
             )
 
             result = {
@@ -479,6 +502,7 @@ async def index_repo(
             source_root="",
             file_languages=file_languages,
             display_name=repo,
+            git_head=current_tree_sha,
         )
 
         result = {
