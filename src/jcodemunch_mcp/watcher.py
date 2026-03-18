@@ -133,9 +133,13 @@ async def watch_folders(
 
     # Handle graceful shutdown
     stop_event = asyncio.Event()
-    loop = asyncio.get_event_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, stop_event.set)
+    if sys.platform == "win32":
+        signal.signal(signal.SIGINT, lambda s, f: stop_event.set())
+        signal.signal(signal.SIGTERM, lambda s, f: stop_event.set())
+    else:
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, stop_event.set)
 
     tasks = [
         asyncio.create_task(
