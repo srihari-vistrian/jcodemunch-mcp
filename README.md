@@ -42,7 +42,6 @@ Index once. Query cheaply. Keep moving.
 ![jMRI](https://img.shields.io/badge/jMRI-Full-blueviolet)
 [![PyPI version](https://img.shields.io/pypi/v/jcodemunch-mcp)](https://pypi.org/project/jcodemunch-mcp/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jcodemunch-mcp)](https://pypi.org/project/jcodemunch-mcp/)
-[![MCP Badge](https://lobehub.com/badge/mcp-full/jgravelle-jcodemunch-mcp)](https://lobehub.com/mcp/jgravelle-jcodemunch-mcp)
 
 > ## Commercial licenses
 >
@@ -222,3 +221,4 @@ Then index a repo, ask your agent what it has indexed, and have it retrieve code
    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=jgravelle/jcodemunch-mcp&type=date&legend=top-left" />
  </picture>
 </a>
+[![MCP Badge](https://lobehub.com/badge/mcp-full/jgravelle-jcodemunch-mcp)](https://lobehub.com/mcp/jgravelle-jcodemunch-mcp)
