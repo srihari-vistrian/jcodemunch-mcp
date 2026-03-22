@@ -1,9 +1,11 @@
 """Search symbols across repository."""
 
+import heapq
 import math
 import os
 import re
 import time
+from fnmatch import fnmatch
 from typing import Optional
 
 from ..storage import IndexStore, CodeIndex, record_savings, estimate_savings, cost_avoided
@@ -44,6 +46,7 @@ def _sym_tokens(sym: dict) -> list[str]:
     tokens += _tokenize(sym.get("signature", "")) * _FIELD_REPS["signature"]
     tokens += _tokenize(sym.get("summary", "")) * _FIELD_REPS["summary"]
     tokens += _tokenize(sym.get("docstring", "")) * _FIELD_REPS["docstring"]
+    # NB: _tokens is internal; all API-facing code must use explicit key picks, not raw dict passthrough
     sym["_tokens"] = tokens
     return tokens
 
@@ -197,21 +200,16 @@ def search_symbols(
 
     # Single-pass BM25 scoring directly over index.symbols
     # (replaces the two-pass heuristic pre-filter + BM25 re-rank)
-    import heapq
-
     effective_limit = max_results if token_budget is None else len(index.symbols)
-    heap: list[tuple[float, int, dict]] = []  # (score, counter, entry)
-    counter = 0
+    heap: list[tuple[float, int, dict]] = []  # (score, candidates_scored, entry)
     candidates_scored = 0
 
     for sym in index.symbols:
         # Apply kind/file_pattern/language filters
         if kind and sym.get("kind") != kind:
             continue
-        if file_pattern:
-            from fnmatch import fnmatch
-            if not fnmatch(sym.get("file", ""), file_pattern):
-                continue
+        if file_pattern and not fnmatch(sym.get("file", ""), file_pattern):
+            continue
         if language and sym.get("language") != language:
             continue
 
@@ -246,16 +244,15 @@ def search_symbols(
         if debug:
             entry["score_breakdown"] = _bm25_breakdown(sym, query_terms, idf, avgdl)
 
-        counter += 1
         if token_budget is not None:
             # Token budget mode: keep all candidates, pack later
-            heapq.heappush(heap, (score, counter, entry))
+            heapq.heappush(heap, (score, candidates_scored, entry))
         else:
             # Fixed max_results: bounded heap
             if len(heap) < effective_limit:
-                heapq.heappush(heap, (score, counter, entry))
+                heapq.heappush(heap, (score, candidates_scored, entry))
             elif score > heap[0][0]:
-                heapq.heapreplace(heap, (score, counter, entry))
+                heapq.heapreplace(heap, (score, candidates_scored, entry))
 
     # Extract results sorted by score descending
     scored_results = [entry for _, _, entry in sorted(heap, key=lambda x: x[0], reverse=True)]
