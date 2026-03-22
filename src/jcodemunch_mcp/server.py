@@ -524,7 +524,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "max_content_results": {
                         "type": "integer", "default": 20,
-                        "description": "Max content matches per identifier.",
+                        "description": "Max files to return per identifier for content search.",
                     },
                 },
                 "required": ["repo"],

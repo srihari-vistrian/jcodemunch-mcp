@@ -59,7 +59,6 @@ def _check_single(
                 defining_files.add(file_path)
 
     content_references = []
-    content_count = 0
 
     if search_content:
         content_dir = store._content_dir(owner, name)
@@ -85,15 +84,14 @@ def _check_single(
                         "line": line_index + 1,
                         "text": line.rstrip()[:200],
                     })
-                    content_count += 1
-                    if len(file_matches) >= max_content_results:
-                        break
 
             if file_matches:
                 content_references.append({"file": file_path, "matches": file_matches})
+                # Stop after N files, not N lines
+                if len(content_references) >= max_content_results:
+                    break
 
-            if content_count >= max_content_results:
-                break
+    content_count = len(content_references)
 
     elapsed = (time.perf_counter() - start) * 1000
     is_referenced = import_count > 0 or content_count > 0
@@ -127,7 +125,7 @@ def _check_batch(
     """Batch logic: loop over identifiers, return grouped results array."""
     results = []
     for identifier in identifiers:
-        results.append(_check_single(
+        result = _check_single(
             identifier=identifier,
             index=index,
             search_content=search_content,
@@ -136,7 +134,11 @@ def _check_batch(
             name=name,
             store=store,
             start=start,
-        ))
+        )
+        # Strip envelope fields for consistency with other batch tools
+        result.pop("repo", None)
+        result.pop("_meta", None)
+        results.append(result)
 
     elapsed = (time.perf_counter() - start) * 1000
     return {
@@ -173,7 +175,7 @@ def check_references(
         identifiers: List of symbol/module names to check (batch mode).
         search_content: Also search file contents (not just imports).
             Set False for fast import-only check.
-        max_content_results: Max content matches per identifier.
+        max_content_results: Max files to return per identifier for content search.
         storage_path: Custom storage path.
 
     Returns:

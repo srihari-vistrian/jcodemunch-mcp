@@ -102,3 +102,36 @@ class TestCheckReferences:
         from jcodemunch_mcp.tools.check_references import check_references
         result = check_references(repo="nonexistent/repo", identifier="foo", storage_path=str(tmp_path / "idx"))
         assert "error" in result
+
+    def test_no_import_data_searches_content(self, tmp_path):
+        """check_references works when index.imports is None (old index)."""
+        from jcodemunch_mcp.storage import IndexStore
+        from jcodemunch_mcp.parser.symbols import Symbol
+
+        # Create a minimal index without import data (imports=None)
+        store = IndexStore(base_path=str(tmp_path / "idx"))
+        sym = Symbol(
+            id="src/utils.py::helper#function",
+            file="src/utils.py",
+            name="helper",
+            qualified_name="helper",
+            kind="function",
+            language="python",
+            signature="def helper(): pass",
+        )
+        store.save_index(
+            owner="test",
+            name="noimports",
+            source_files=["src/utils.py", "src/app.py"],
+            symbols=[sym],
+            raw_files={"src/utils.py": "def helper(): pass", "src/app.py": "result = helper()"},
+            languages={"python": 2},
+            file_languages={"src/utils.py": "python", "src/app.py": "python"},
+            file_summaries={"src/utils.py": "", "src/app.py": ""},
+        )
+
+        from jcodemunch_mcp.tools.check_references import check_references
+        result = check_references(repo="test/noimports", storage_path=str(tmp_path / "idx"), identifier="helper")
+        # Should find content reference in app.py (not import, since no import data)
+        assert result["is_referenced"] is True
+        assert result["content_count"] == 1

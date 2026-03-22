@@ -99,33 +99,24 @@ def _find_importers_batch(
 
     source_files = frozenset(index.source_files)
 
-    # Build a set of all files that are imported by at least one other file.
+    # Build reverse map once: file_path -> list of importer entries  O(M)
+    import_map: dict[str, list[dict]] = {}
     files_that_are_imported: set[str] = set()
     for src_file, file_imports in index.imports.items():
         for imp in file_imports:
             resolved = resolve_specifier(imp["specifier"], src_file, source_files)
             if resolved:
                 files_that_are_imported.add(resolved)
+                import_map.setdefault(resolved, []).append({
+                    "file": src_file,
+                    "specifier": imp["specifier"],
+                    "names": imp.get("names", []),
+                    "has_importers": src_file in files_that_are_imported,
+                })
 
     results = []
-
     for file_path in file_paths:
-        file_results = []
-
-        for src_file, file_imports in index.imports.items():
-            if src_file == file_path:
-                continue
-            for imp in file_imports:
-                resolved = resolve_specifier(imp["specifier"], src_file, source_files)
-                if resolved == file_path:
-                    file_results.append({
-                        "file": src_file,
-                        "specifier": imp["specifier"],
-                        "names": imp.get("names", []),
-                        "has_importers": src_file in files_that_are_imported,
-                    })
-                    break  # one match per file is enough
-
+        file_results = import_map.get(file_path, [])  # O(1) lookup
         file_results.sort(key=lambda r: r["file"])
         results.append({
             "file_path": file_path,
@@ -133,11 +124,10 @@ def _find_importers_batch(
             "importers": file_results[:max_results],
         })
 
-    elapsed = (time.perf_counter() - start) * 1000
     return {
         "repo": f"{owner}/{name}",
         "results": results,
-        "_meta": {"timing_ms": round(elapsed, 1)},
+        "_meta": {"timing_ms": round((time.perf_counter() - start) * 1000, 1)},
     }
 
 

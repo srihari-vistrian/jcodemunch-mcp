@@ -89,30 +89,20 @@ def _find_references_batch(
             "_meta": {"timing_ms": round((time.perf_counter() - start) * 1000, 1)},
         }
 
-    results = []
+    # Build reverse map once: identifier_lower -> list of file entries  O(M)
+    ident_map: dict[str, list[dict]] = {}
+    for src_file, file_imports in index.imports.items():
+        for imp in file_imports:
+            for name_or_stem in imp.get("names", []):
+                key = name_or_stem.lower()
+                ident_map.setdefault(key, []).append({"file": src_file, "specifier": imp["specifier"], "match_type": "named"})
+            spec_stem = posixpath.splitext(posixpath.basename(imp["specifier"]))[0].lower()
+            ident_map.setdefault(spec_stem, []).append({"file": src_file, "specifier": imp["specifier"], "match_type": "specifier_stem"})
 
+    results = []
     for identifier in identifiers:
         ident_lower = identifier.lower()
-        file_results = []
-
-        for src_file, file_imports in index.imports.items():
-            matches = []
-            for imp in file_imports:
-                named_match = any(n.lower() == ident_lower for n in imp.get("names", []))
-                spec = imp["specifier"]
-                spec_stem = posixpath.splitext(posixpath.basename(spec))[0].lower()
-                stem_match = spec_stem == ident_lower
-
-                if named_match or stem_match:
-                    matches.append({
-                        "specifier": spec,
-                        "names": imp.get("names", []),
-                        "match_type": "named" if named_match else "specifier_stem",
-                    })
-
-            if matches:
-                file_results.append({"file": src_file, "matches": matches})
-
+        file_results = ident_map.get(ident_lower, [])  # O(1) lookup
         file_results.sort(key=lambda r: r["file"])
         results.append({
             "identifier": identifier,
@@ -120,11 +110,10 @@ def _find_references_batch(
             "references": file_results[:max_results],
         })
 
-    elapsed = (time.perf_counter() - start) * 1000
     return {
         "repo": f"{owner}/{name}",
         "results": results,
-        "_meta": {"timing_ms": round(elapsed, 1)},
+        "_meta": {"timing_ms": round((time.perf_counter() - start) * 1000, 1)},
     }
 
 

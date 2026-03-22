@@ -586,6 +586,23 @@ class TestFindImporters:
         assert "importers" in singular_result
         assert "results" not in singular_result
 
+    def test_both_file_path_and_file_paths_raises(self, tmp_path):
+        """Passing both file_path and file_paths raises ValueError."""
+        src = tmp_path / "src"
+        src.mkdir()
+        _write(src / "utils.js", "export function helper() {}")
+        result = index_folder(path=str(tmp_path), use_ai_summaries=False, storage_path=str(tmp_path / "idx"))
+        repo = result["repo"]
+
+        from jcodemunch_mcp.tools.find_importers import find_importers
+        with pytest.raises(ValueError):
+            find_importers(
+                repo=repo,
+                file_path="utils.js",
+                file_paths=["utils.js"],
+                storage_path=str(tmp_path / "idx"),
+            )
+
 
 class TestFindReferences:
     """Integration tests for find_references."""
@@ -752,6 +769,23 @@ class TestFindReferences:
         result = find_references(repo=repo, identifier="helper", storage_path=str(store))
         assert "references" in result
         assert "results" not in result
+
+    def test_both_identifier_and_identifiers_raises(self, tmp_path):
+        """Passing both identifier and identifiers raises ValueError."""
+        src = tmp_path / "src"
+        src.mkdir()
+        _write(src / "utils.js", "export function helper() {}")
+        result = index_folder(path=str(tmp_path), use_ai_summaries=False, storage_path=str(tmp_path / "idx"))
+        repo = result["repo"]
+
+        from jcodemunch_mcp.tools.find_references import find_references
+        with pytest.raises(ValueError):
+            find_references(
+                repo=repo,
+                identifier="helper",
+                identifiers=["helper"],
+                storage_path=str(tmp_path / "idx"),
+            )
 
 
 # ---------------------------------------------------------------------------
